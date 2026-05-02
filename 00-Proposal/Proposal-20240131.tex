@@ -1,0 +1,357 @@
+\documentclass{article} %report, book, .... article
+\usepackage[utf8]{inputenc} %\ddddddd[]{}
+\usepackage{kotex}
+\usepackage{color}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{extarrows}
+\usepackage{graphicx}
+\usepackage[hypcap=false]{caption}
+\usepackage{indentfirst}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{multirow}
+\usepackage{makecell}
+\usepackage{fancyhdr}
+\usepackage{appendix}
+\usepackage{mathrsfs}
+\usepackage{listings}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\newcolumntype{L}[1]{>{\raggedright\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{C}[1]{>{\centering\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\newcolumntype{R}[1]{>{\raggedleft\let\newline\\\arraybackslash\hspace{0pt}}m{#1}}
+\usepackage[a4paper,left=25mm,right=25mm,top=30mm,bottom=30mm]{geometry}
+\usepackage{xcolor}
+\usepackage[normalem]{ulem} % provide \uline without changing \emph
+\usepackage{hyperref}
+\usepackage{pgfplots}
+\RequirePackage{tikz}
+\RequirePackage[framemethod=TikZ]{mdframed}
+
+\pgfplotsset{compat=1.18}
+\definecolor{mplblue}{RGB}{31,119,180} % 원본 느낌을 살리는 Matplotlib 기본 파란색
+% Global: don't change text color or draw borders for links so TOC and refs look normal
+\hypersetup{
+	colorlinks=false,
+	pdfborder={0 0 0}
+}
+% Redefine inline link commands to show blue text with a blue underline.
+% We capture the original commands then wrap the link text.
+\let\OriginalHref\href
+\renewcommand{\href}[2]{% #1 = URL, #2 = text
+	\OriginalHref{#1}{\textcolor{blue}{\uline{#2}}}%
+}
+
+\let\OriginalUrl\url
+\renewcommand{\url}[1]{% typeset a clickable, blue-underlined URL
+	\href{#1}{\textcolor{blue}{\uline{\nolinkurl{#1}}}}%
+}
+\usepackage{multicol}
+
+%\pagestyle{myheadings}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[R]{(2026S) Term Project - Proposal}
+\fancyhead[L]{CS.20200 - Programming Prinsiples}
+% \fancyhead[R]{}
+\fancyfoot[L]{KAIST}
+\fancyfoot[C]{\thepage}
+\fancyfoot[R]{20240131 Seoho Kim}
+\title{\huge\textbf{2048 CLI}}
+\author{20240131 Seoho Kim}
+
+\linespread{1.6}
+\setcounter{tocdepth}{2}
+
+% {\"a} {\^e} {\`i} {\.I} {\o} {\'u} {\aa} {\c c} {\u g} {\l} {\~n} {\H o} {\v r} {\s s} {\r u}
+
+\setlist[enumerate, 1]{label=\textbf{R\arabic*.}, leftmargin=*, itemsep=4pt}
+% \setlist[enumerate, 1]{label=(\alph*)}
+% \setlist[enumerate, 2]{label=\roman*.}
+
+\usepackage{amsthm}
+\newtheorem*{theorem}{Theorem}
+\newtheorem*{definition}{Definition}
+\newtheorem*{lemma}{Lemma}
+\newtheorem*{claim}{\textbf{Claim}}
+
+% ---------- listings (for inline code style) ----------
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    backgroundcolor=\color{gray!10},
+    frame=single,
+    framerule=0pt,
+    breaklines=true
+}
+
+\definecolor{plGray}{RGB}{180, 180, 180}
+
+\global\mdfdefinestyle{defaultStyle}{
+        topline=false, bottomline=false, rightline=false,
+        leftline=true,
+        linewidth=3pt,
+        backgroundcolor=plBackground,
+        frametitleaboveskip=10pt,
+        frametitlebelowskip=0pt,
+        frametitlealignment=\raggedright,
+        % frametitlefont=\bfseries\sffamily,
+        innerleftmargin=12pt, innerrightmargin=12pt,
+        innertopmargin=5pt, innerbottommargin=12pt,
+        skipabove=15pt, skipbelow=15pt,
+        nobreak=true,
+}
+
+\newenvironment{myNote}{
+        \begin{mdframed}[
+                        style=defaultStyle,
+                        linecolor=plGray,
+                        backgroundcolor=plGray!8,
+                        innertopmargin=7pt,
+                        frametitle={\textbf{\color{plGray}Note}}
+                ]
+                \setlength{\parindent}{0pt}
+                \setlength{\parskip}{5pt}
+                }{
+        \end{mdframed}
+}
+
+% ================================================================
+\begin{document}
+\maketitle
+\thispagestyle{fancy}
+
+% ----------------------------------------------------------------
+\section{Overview}
+
+This project is a command-line implementation of the sliding-tile puzzle game \textbf{2048},
+written entirely in \textbf{F\# with .NET~10}.
+The player slides tiles on a square board using the \texttt{W}/\texttt{A}/\texttt{S}/\texttt{D} keys.
+When two tiles of the same value collide, they merge into a single tile whose value is their sum.
+The player wins when a tile reaches the value~2048.
+The game is lost when no legal move remains.
+
+The player may choose from four board sizes before each game:
+$2{\times}2$, $4{\times}4$, $8{\times}8$, and $16{\times}16$.
+The per-size all-time high score is persisted to a local file between sessions.
+
+The implementation follows a FUNCTIONAL CORE and IMPERATIVE SHELL architecture:
+all game logic (tile merging, move validation, win/loss detection) is expressed as
+pure, immutable functions with no mutable state, while console I/O is confined to the
+outermost layer.
+
+
+% ----------------------------------------------------------------
+\section{Requirements}
+
+\subsection{Main Menu}
+
+\begin{enumerate}
+
+	\item When the program starts, it displays a main menu containing exactly four options:\\
+	      \texttt{1) 3x3}, \texttt{2) 4x4}, \texttt{3) 5x5}, \texttt{4) 6x6}, \texttt{5) 8x8}.
+
+	\item The user selects a board size by entering the digit
+	      \texttt{1}, \texttt{2}, \texttt{3}, \texttt{4}, or \texttt{5}.
+	      If any other input is entered, the menu is re-displayed and the user is prompted again.
+
+	\item The main menu also displays the all-time high score for each board size,
+	      loaded from the local score file.
+	      If no score has been recorded for a size, it is displayed as~\texttt{0}.
+
+\end{enumerate}
+
+\subsection{Game Initialisation}
+
+\begin{enumerate}[resume]
+
+	\item After the user selects a board size,
+	      a new game board of that size is created with all cells initialised to~\texttt{0}.
+
+	\item Exactly two tiles are placed on the board in randomly chosen distinct empty cells
+	      before the first move.
+	      Each tile's value is independently sampled:
+	      \texttt{2} with probability~$0.9$ and \texttt{4} with probability~$0.1$.
+
+	\item The current score is initialised to~\texttt{0}.
+
+\end{enumerate}
+
+\subsection{Display}
+
+\begin{enumerate}[resume]
+
+	\item After every state change (initialisation, successful move, win, or loss),
+	      the board is re-rendered to the terminal.
+
+	\item Each cell is displayed in a consistent format such that all cells have equal width.
+	      The exact formatting, padding, and representation of empty cells are implementation-defined.
+
+	\item The current score and the all-time high score for the selected board size
+	      are displayed on every render.
+
+	\item The available controls (\texttt{W}/\texttt{A}/\texttt{S}/\texttt{D} to move,
+	      \texttt{R} to restart, \texttt{Q} to quit) are displayed on every render.
+
+\end{enumerate}
+
+\subsection{Moves}
+
+\begin{enumerate}[resume]
+
+	\item During a game the program reads exactly one character of input at a time without
+	      requiring the user to press Enter (raw keypress mode).
+	      Valid move keys are \texttt{W} (up), \texttt{A} (left), \texttt{S} (down), \texttt{D} (right),
+	      case-insensitively.
+
+	\item A \emph{slide} in a given direction is computed row-by-row (for left/right) or
+	      column-by-column (for up/down).
+	      Within each line, the following steps are applied in order:
+	      \begin{enumerate}[label=(\alph*)]
+		      \item Remove all zero cells, compacting non-zero values toward the leading edge.
+		      \item Scan the compacted sequence from the leading edge: whenever two adjacent
+		            values are equal, replace them with a single cell whose value is their sum.
+		            Each cell participates in at most one merge per move.
+		      \item Pad the resulting sequence with zeros at the trailing edge to restore the
+		            original line length.
+	      \end{enumerate}
+
+	\item When two tiles merge, their sum is added to the current score.
+
+	\item If the resulting board after a slide is identical to the board before the slide,
+	      the move is considered \emph{ineffective}.
+	      An ineffective move does not place a new tile and does not change the score.
+
+	\item If a move is effective, one new tile is placed in a randomly chosen empty cell.
+	      The tile value is \texttt{2} with probability~$0.9$ and \texttt{4} with probability~$0.1$.
+
+\end{enumerate}
+
+\subsection{Win Condition}
+
+\begin{enumerate}[resume]
+
+	\item If any cell on the board contains the value~\texttt{2048} after a move, the game
+	      enters the \emph{win} state.
+
+	\item Upon entering the win state, the board and score are rendered, followed by the message
+	      \texttt{You win!}
+
+	\item The current score is compared with the stored high score for the selected board size.
+	      If the current score is greater, the high score is updated in the local score file.
+
+	\item After displaying the win message, the program waits for any keypress,
+	      then returns to the main menu.
+
+\end{enumerate}
+
+\subsection{Loss Condition}
+
+\begin{enumerate}[resume]
+
+	\item After every effective move and tile placement, the program checks whether any legal
+	      move remains.
+	      A legal move exists if and only if at least one of the four slides would produce a board
+	      different from the current board.
+
+	\item If no legal move exists, the game enters the \emph{loss} state.
+
+	\item Upon entering the loss state, the board and score are rendered, followed by the message
+	      \texttt{Game over.}
+
+	\item The high score update rule in R17 applies identically on loss.
+
+	\item After displaying the game-over message, the program waits for any keypress,
+	      then returns to the main menu.
+
+\end{enumerate}
+
+\subsection{In-Game Controls}
+
+\begin{enumerate}[resume]
+
+	\item Pressing \texttt{R} (case-insensitively) during a game immediately ends the current game
+	      without updating the high score, and returns the player to the main menu.
+
+	\item Pressing \texttt{Q} (case-insensitively) during a game immediately ends the current game
+	      without updating the high score, and exits the program.
+
+	\item Any key other than \texttt{W}, \texttt{A}, \texttt{S}, \texttt{D}, \texttt{R}, \texttt{Q}
+	      is silently ignored; the board is not re-rendered.
+
+\end{enumerate}
+
+\subsection{Score Persistence}
+
+\begin{enumerate}[resume, label=\textbf{R\arabic*.}, leftmargin=*, itemsep=4pt]
+
+	\item High scores are stored in a plain-text file named \texttt{scores.txt} in the same
+	      directory as the executable.
+
+	\item The file contains one line per board size in the format \texttt{<size>:<score>},
+	      e.g.\ \texttt{4:13204}.
+	      Board sizes not yet recorded are omitted; their high score is treated as~\texttt{0}.
+
+	\item If \texttt{scores.txt} does not exist at program startup, it is treated as empty
+	      (all high scores are~\texttt{0}).
+	      The file is created when the first high score is written.
+
+\end{enumerate}
+
+% ----------------------------------------------------------------
+\section{Example Interaction}
+
+\begin{myNote}
+	The following interaction is illustrative. The exact visual layout may differ in the final implementation.
+\end{myNote}
+
+The program starts and displays:
+
+\begin{lstlisting}
+=== 2048-CLI ===
+Select board size:
+  1) 2x2   (Best: 0)
+  2) 4x4   (Best: 0)
+  3) 8x8   (Best: 0)
+  4) 16x16 (Best: 0)
+> _
+\end{lstlisting}
+
+The user presses \texttt{2}.
+A $4{\times}4$ board is created, two tiles are placed, and the following is rendered:
+
+\begin{lstlisting}
+Score: 0   Best: 0
+.  .  .  2
+.  .  .  .
+.  4  .  .
+.  .  .  .
+[W/A/S/D] Move  [R] Restart  [Q] Quit
+\end{lstlisting}
+
+The user presses \texttt{A} (slide left).
+Tiles move left; a new tile appears in a random empty cell.
+The updated board and score are displayed.
+
+% ----------------------------------------------------------------
+\section{Out of Scope}
+
+The following features are explicitly \emph{not} part of this project's requirements
+and will not be implemented:
+
+\begin{itemize}[itemsep=2pt]
+	\item Graphical or browser-based rendering.
+	\item Online or networked leaderboards.
+	\item Undo functionality.
+	\item Animations or sound effects.
+	\item Targets other than~2048 (e.g., a ``continue past 2048'' mode).
+\end{itemize}
+
+% ----------------------------------------------------------------
+\section{Repository}
+
+\url{https://github.com/seohokim-hoya/2048-cli}
+
+\end{document}
